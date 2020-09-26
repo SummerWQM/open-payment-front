@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="semantic/semantic.min.css">
+    <script src="./jquery.min.js"></script>
+    <script src="./semantic/semantic.min.js"></script>
+</head>
+<script src="qrcode.min.js"></script>
+
+<div class="ui secondary pointing menu">
+    <a class="active item">
+      Home
+    </a>
+    <a class="item">
+      Messages
+    </a>
+    <a class="item">
+      Friends
+    </a>
+    <div class="right menu">
+        <a class="ui item">
+        Logout
+      </a>
+    </div>
+</div>
+
+<div class="ui segment centered">
+    <button id="apply" class="ui primary button">
+        点击申请支付并支付
+      </button>
+    <div class="ui segment" id="qrcode"></div>
+</div>
+
+<script type="text/javascript">
+    var getQrCode = function(text) {
+        var qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: text,
+            width: 128,
+            height: 128,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+
+    var transaction = {
+        "amount": 10,
+        "transactionName": "交易DEMO测试",
+        "creator": 0,
+        "callbackUrl": "http://example.com",
+        "fromSystem": "TEST"
+    };
+
+    var request = function(method, uri, data, func) {
+        $.ajax({
+            type: method,
+            url: uri,
+            contentType: "application/json; charset=utf-8",
+            data: data,
+            success: function(resp) {
+                func(resp)
+            },
+            error: function(err) {
+                func(err)
+            }
+
+        })
+    }
+
+    $("#apply").on("click", function() {
+        request("POST", "http://127.0.0.1:8081/api/transaction", JSON.stringify(transaction), applySuccessFunc)
+    });
+
+    var applySuccessFunc = function(response) {
+        if (response.code == 200) {
+            applyPayWx(response.data)
+        }
+    };
+
+    var applyPayWx = function(transactionNo) {
+        request("GET", "http://127.0.0.1:8081/api/pay/" + transactionNo + "/WECHATSCAN", "", applyWxSuccessFunc)
+    }
+
+    var applyWxSuccessFunc = function(response) {
+        if (response.code == 200) {
+            getQrCode(response.data.uri)
+        }
+    }
+</script>
+
+</html>
